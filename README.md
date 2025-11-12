@@ -29,3 +29,4 @@ Flow:
 - **Backend:** Firebase (Auth, Firestore)
 - **Styling:** CSS
 - **Hosting:** Firebase Hosting
+![Firebase Hosting](https://college-event-manager-4046a.web.app/)
