@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // All users can read event listings
+    match /bookings/{bookingId} {
+      allow read: if true;
+
+      // Only club leads can create bookings
+      allow create: if request.auth != null && 
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "club";
+
+      // Only teachers can update bookings (approve/reject)
+      allow update: if request.auth != null && 
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "teacher";
+
+      // No one deletes bookings
+      allow delete: if false;
+    }
+
+    // Users collection — everyone can read their own profile
+    match /users/{userId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
+    }
+
+    // Optional: event registrations
+    match /registrations/{regId} {
+      allow read: if true;
+      allow create: if request.auth != null && 
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "student";
+      allow update, delete: if false;
+    }
+  }
+}
