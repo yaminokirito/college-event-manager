@@ -1,10 +1,10 @@
-// ...existing code...
+// src/components/Auth/Login.jsx
 import React, { useState } from 'react'
 import { signInWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '../../firebase'
 import { useNavigate } from 'react-router-dom'
 
-export default function Login(){
+export default function Login() {
   const [email, setEmail] = useState('')
   const [pass, setPass] = useState('')
   const [err, setErr] = useState(null)
@@ -14,37 +14,42 @@ export default function Login(){
     e.preventDefault()
     try {
       await signInWithEmailAndPassword(auth, email, pass)
-      // Auth listener in App.jsx handles redirect
+      // Redirect handled in App.jsx
     } catch (error) {
       setErr(error.message)
     }
   }
 
   return (
-    <div className="max-w-md mx-auto card">
-      <h2 className="text-2xl font-bold mb-4">Sign in</h2>
-      <form onSubmit={submit} className="flex flex-col gap-3">
+    <div className="max-w-md mx-auto card mt-20">
+      <h2 className="text-2xl font-bold mb-4 text-green-400">Sign in</h2>
+
+      <form onSubmit={submit} className="flex flex-col gap-4">
         <input
           required
-          className="p-2 rounded bg-white text-black placeholder-gray-500"
           placeholder="Email"
           value={email}
-          onChange={e => setEmail(e.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
         />
+
         <input
           required
-          className="p-2 rounded bg-white text-black placeholder-gray-500"
-          placeholder="Password"
           type="password"
+          placeholder="Password"
           value={pass}
-          onChange={e => setPass(e.target.value)}
+          onChange={(e) => setPass(e.target.value)}
         />
-        {err && <div className="text-red-400">{err}</div>}
-        <div className="flex gap-2">
-          <button className="btn-primary" type="submit">Sign in</button>
+
+        {err && <div className="text-red-400 text-sm">{err}</div>}
+
+        <div className="flex gap-3 mt-3">
+          <button type="submit" className="btn-primary w-full">
+            Sign in
+          </button>
+
           <button
             type="button"
-            className="px-4 py-2 rounded border"
+            className="px-4 py-2 w-full rounded border border-gray-500 hover:bg-gray-700 transition"
             onClick={() => nav('/register')}
           >
             Register
@@ -54,5 +59,5 @@ export default function Login(){
     </div>
   )
 }
+
 console.log("Login loaded");
-// ...existing code...
