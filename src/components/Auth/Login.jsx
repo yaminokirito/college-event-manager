@@ -1,3 +1,4 @@
+// ...existing code...
 import React, { useState } from 'react'
 import { signInWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '../../firebase'
@@ -25,14 +26,14 @@ export default function Login(){
       <form onSubmit={submit} className="flex flex-col gap-3">
         <input
           required
-          className="p-2 rounded"
+          className="p-2 rounded bg-white text-black placeholder-gray-500"
           placeholder="Email"
           value={email}
           onChange={e => setEmail(e.target.value)}
         />
         <input
           required
-          className="p-2 rounded"
+          className="p-2 rounded bg-white text-black placeholder-gray-500"
           placeholder="Password"
           type="password"
           value={pass}
@@ -54,4 +55,4 @@ export default function Login(){
   )
 }
 console.log("Login loaded");
-
+// ...existing code...
