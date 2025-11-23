@@ -2,9 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body, #root { height: 100%; }
-body { background: linear-gradient(180deg, #000, #071014); color: #e6ffed; }
+/* Make sure full height layout works */
+html, body, #root {
+  height: 100%;
+}
 
-/* small green accents */
-.btn-primary { @apply bg-primary text-black font-semibold px-4 py-2 rounded-lg; }
-.card { @apply bg-surface p-4 rounded-2xl shadow-lg; }
+/* Global background and base text color */
+body {
+  background: linear-gradient(180deg, #000000, #071014);
+  color: #e6ffed;
+  font-family: 'Inter', sans-serif;
+}
+
+/* ------------------------- */
+/* INPUT + FIELD FIXES       */
+/* ------------------------- */
+
+/* Ensure text inside inputs is visible */
+input,
+select,
+textarea {
+  color: white !important;
+  background-color: #1f2937 !important;  /* gray-800 */
+  border: 1px solid #374151 !important;  /* gray-700 */
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+}
+
+/* Hover + focus states */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none !important;
+  border-color: #4ade80 !important; /* green-400 */
+  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.3);
+}
+
+/* Placeholder color fix */
+input::placeholder,
+textarea::placeholder {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* ------------------------- */
+/* BUTTON UTILITIES          */
+/* ------------------------- */
+
+.btn-primary {
+  @apply bg-green-500 text-black font-semibold px-4 py-2 rounded-lg hover:bg-green-400 transition;
+}
+
+/* ------------------------- */
+/* CARD UTILITIES            */
+/* ------------------------- */
+
+.card {
+  @apply bg-gray-800 p-4 rounded-2xl shadow-lg;
+}
