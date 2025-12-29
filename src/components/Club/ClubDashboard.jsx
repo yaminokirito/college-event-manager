@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
+
 import BookingForm from '../Booking/BookingForm'
 import EventCalendar from '../Calendar/EventCalendar'
+import ClubSummary from '/ClubSummary'
+import UploadReport from '../Reports/UploadReport'
+
 import {
   collection,
   query,
@@ -20,6 +24,7 @@ export default function ClubDashboard({ user }) {
   /* ---------------- LOAD BOOKINGS ---------------- */
   useEffect(() => {
     fetchBookings()
+    // eslint-disable-next-line
   }, [tab, user])
 
   async function fetchBookings() {
@@ -30,11 +35,13 @@ export default function ClubDashboard({ user }) {
 
     try {
       setLoading(true)
+
       const q = query(
         collection(db, 'bookings'),
         where('clubId', '==', user.uid),
         where('status', '==', tab)
       )
+
       const snap = await getDocs(q)
       setBookings(snap.docs.map(d => ({ id: d.id, ...d.data() })))
     } catch (err) {
@@ -66,7 +73,7 @@ export default function ClubDashboard({ user }) {
 
   return (
     <motion.div
-      className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+      className="grid grid-cols-1 lg:grid-cols-3 gap-6"
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
@@ -76,11 +83,10 @@ export default function ClubDashboard({ user }) {
         <h3 className="text-2xl font-semibold mb-4 text-blue-400">
           Request a Room
         </h3>
-        {/* ⬇️ BookingForm now loads rooms itself */}
         <BookingForm user={user} />
       </motion.div>
 
-      {/* RIGHT — CALENDAR */}
+      {/* CENTER — CALENDAR */}
       <motion.div className="p-6 rounded-2xl bg-gradient-to-b from-gray-800 to-gray-900 shadow-lg">
         <h3 className="text-2xl font-semibold mb-4 text-blue-400">
           Event Calendar
@@ -88,9 +94,17 @@ export default function ClubDashboard({ user }) {
         <EventCalendar />
       </motion.div>
 
+      {/* RIGHT — CLUB SUMMARY */}
+      <motion.div className="p-6 rounded-2xl bg-gradient-to-b from-gray-800 to-gray-900 shadow-lg">
+        <h3 className="text-2xl font-semibold mb-4 text-blue-400">
+          Club Summary
+        </h3>
+        <ClubSummary clubId={user?.uid} />
+      </motion.div>
+
       {/* BOTTOM — BOOKINGS LIST */}
-      <motion.div className="lg:col-span-2 p-6 rounded-2xl bg-gradient-to-b from-gray-800 to-gray-900 shadow-lg">
-        <div className="flex items-center justify-between mb-4">
+      <motion.div className="lg:col-span-3 p-6 rounded-2xl bg-gradient-to-b from-gray-800 to-gray-900 shadow-lg">
+        <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
           <h3 className="text-2xl font-semibold text-blue-400">
             Your Bookings
           </h3>
@@ -127,21 +141,25 @@ export default function ClubDashboard({ user }) {
                 key={b.id}
                 className="p-4 rounded-lg bg-gray-700 flex justify-between gap-4"
               >
-                {/* Info */}
+                {/* INFO */}
                 <div>
                   <div className="font-semibold text-white">
                     {b.title || 'Untitled Event'}
                   </div>
                   <div className="text-sm text-gray-300">
-                    {b.room} • {new Date(b.date).toLocaleDateString()}
+                    {b.room} •{' '}
+                    {b.date
+                      ? new Date(b.date).toLocaleDateString()
+                      : 'No date'}
                   </div>
                   <div className="text-sm text-gray-400">
                     {b.start} – {b.end}
                   </div>
                 </div>
 
-                {/* Actions */}
+                {/* ACTIONS */}
                 <div className="flex flex-col items-end gap-2">
+                  {/* Registration Link */}
                   {b.registrationLink ? (
                     <>
                       <a
@@ -154,7 +172,9 @@ export default function ClubDashboard({ user }) {
                       </a>
                       <button
                         onClick={() =>
-                          navigator.clipboard?.writeText(b.registrationLink)
+                          navigator.clipboard?.writeText(
+                            b.registrationLink
+                          )
                         }
                         className="text-xs underline text-gray-300"
                       >
@@ -167,6 +187,7 @@ export default function ClubDashboard({ user }) {
                     </span>
                   )}
 
+                  {/* Edit Registration Link */}
                   {tab === 'approved' && (
                     <button
                       onClick={() =>
@@ -176,6 +197,11 @@ export default function ClubDashboard({ user }) {
                     >
                       {b.registrationLink ? 'Edit link' : 'Add link'}
                     </button>
+                  )}
+
+                  {/* ✅ REPORT UPLOAD — APPROVED ONLY */}
+                  {b.status === 'approved' && (
+                    <UploadReport booking={b} user={user} />
                   )}
                 </div>
               </li>

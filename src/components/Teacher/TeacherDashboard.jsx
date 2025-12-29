@@ -1,170 +1,81 @@
-import React, { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  doc,
-  updateDoc,
-  runTransaction
-} from 'firebase/firestore'
-import { db } from '../../firebase'
-import EventCalendar from '../Calendar/EventCalendar'
-import RoomManager from './RoomManager'
+import React from "react"
+import { motion } from "framer-motion"
 
-export default function TeacherDashboard() {
-  const [bookings, setBookings] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState('pending')
+import EventReports from "./EventReports"
+// later you can add:
+// import BookingApprovals from "./BookingApprovals"
 
-  useEffect(() => {
-    fetchBookings()
-  }, [tab])
-
-  async function fetchBookings() {
-    try {
-      setLoading(true)
-      const q = query(
-        collection(db, 'bookings'),
-        where('status', '==', tab)
-      )
-      const s = await getDocs(q)
-      setBookings(s.docs.map(d => ({ id: d.id, ...d.data() })))
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function approve(b) {
-    try {
-      await runTransaction(db, async (tx) => {
-        const bookingsRef = collection(db, 'bookings')
-        const snapshot = await getDocs(
-          query(
-            bookingsRef,
-            where('status', '==', 'approved'),
-            where('room', '==', b.room),
-            where('date', '==', b.date)
-          )
-        )
-
-        const overlap = snapshot.docs.some(docSnap => {
-          const d = docSnap.data()
-          return !(b.end <= d.start || b.start >= d.end)
-        })
-
-        if (overlap) throw new Error('Slot already taken')
-
-        tx.update(doc(db, 'bookings', b.id), {
-          status: 'approved',
-          approvedAt: new Date()
-        })
-      })
-
-      fetchBookings()
-    } catch (err) {
-      alert(err.message)
-    }
-  }
-
-  async function reject(b) {
-    await updateDoc(doc(db, 'bookings', b.id), {
-      status: 'rejected'
-    })
-    fetchBookings()
-  }
-
+export default function TeacherDashboard({ user }) {
   return (
     <motion.div
-      className="grid grid-cols-1 xl:grid-cols-3 gap-6"
-      initial={{ opacity: 0, y: 25 }}
+      className="min-h-screen grid grid-cols-1 gap-6"
+      initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
+      {/* HEADER */}
+      <div className="p-6 rounded-2xl bg-gradient-to-b from-gray-800 to-gray-900 shadow-lg">
+        <h1 className="text-3xl font-bold text-green-400">
+          Teacher Dashboard
+        </h1>
+        <p className="text-gray-400 mt-1">
+          Approve bookings, review club activity, and verify reports
+        </p>
+      </div>
 
-      {/* ================= LEFT: REQUESTS ================= */}
+      {/* QUICK OVERVIEW (PLACEHOLDER – OPTIONAL) */}
       <motion.div
-        className="p-6 rounded-2xl bg-gradient-to-b from-gray-800 to-gray-900 shadow-lg"
-        whileHover={{ scale: 1.02 }}
+        className="grid grid-cols-1 md:grid-cols-3 gap-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.15 }}
       >
-        <h3 className="text-2xl font-semibold mb-4 text-blue-400">
-          Booking Requests
-        </h3>
-
-        {/* Tabs */}
-        <div className="flex gap-3 mb-4">
-          {['pending', 'approved', 'rejected'].map(t => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`px-4 py-2 rounded-lg font-semibold ${
-                tab === t
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-700 text-gray-300'
-              }`}
-            >
-              {t.charAt(0).toUpperCase() + t.slice(1)}
-            </button>
-          ))}
+        <div className="p-4 rounded-xl bg-gray-800 text-center">
+          <div className="text-2xl font-bold text-blue-400">—</div>
+          <div className="text-sm text-gray-400">Pending Requests</div>
         </div>
 
-        {loading ? (
-          <p className="text-gray-400 italic">Loading...</p>
-        ) : bookings.length === 0 ? (
-          <p className="text-gray-400 italic">No {tab} requests.</p>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {bookings.map(b => (
-              <div
-                key={b.id}
-                className="p-4 rounded-lg bg-gray-700"
-              >
-                <div className="font-semibold text-white">
-                  {b.title || 'Untitled'} — {b.room}
-                </div>
-                <div className="text-sm text-gray-300">
-                  {b.date} | {b.start} - {b.end}
-                </div>
+        <div className="p-4 rounded-xl bg-gray-800 text-center">
+          <div className="text-2xl font-bold text-green-400">—</div>
+          <div className="text-sm text-gray-400">Approved Events</div>
+        </div>
 
-                {tab === 'pending' && (
-                  <div className="flex gap-3 mt-3">
-                    <button
-                      className="px-4 py-1.5 bg-green-500 text-black rounded-lg font-semibold"
-                      onClick={() => approve(b)}
-                    >
-                      Approve
-                    </button>
-                    <button
-                      className="px-4 py-1.5 border rounded-lg text-gray-200"
-                      onClick={() => reject(b)}
-                    >
-                      Reject
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="p-4 rounded-xl bg-gray-800 text-center">
+          <div className="text-2xl font-bold text-purple-400">—</div>
+          <div className="text-sm text-gray-400">Reports Submitted</div>
+        </div>
       </motion.div>
 
-      {/* ================= MIDDLE: CALENDAR ================= */}
+      {/* EVENT REPORTS */}
       <motion.div
         className="p-6 rounded-2xl bg-gradient-to-b from-gray-800 to-gray-900 shadow-lg"
-        whileHover={{ scale: 1.02 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.25 }}
       >
-        <h3 className="text-2xl font-semibold mb-4 text-blue-400">
-          Event Calendar
-        </h3>
-        <EventCalendar />
+        <h2 className="text-xl font-semibold mb-4 text-blue-400">
+          Event Reports
+        </h2>
+
+        <EventReports />
       </motion.div>
 
-      {/* ================= RIGHT: ROOM MANAGER ================= */}
-      <RoomManager />
+      {/* FUTURE: BOOKING APPROVALS */}
+      <motion.div
+        className="p-6 rounded-2xl bg-gradient-to-b from-gray-800 to-gray-900 shadow-lg opacity-60"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.35 }}
+      >
+        <h2 className="text-xl font-semibold mb-2 text-yellow-400">
+          Booking Approvals
+        </h2>
+        <p className="text-sm text-gray-400 italic">
+          (Approval panel can be added here later)
+        </p>
 
+        {/* <BookingApprovals /> */}
+      </motion.div>
     </motion.div>
   )
 }
