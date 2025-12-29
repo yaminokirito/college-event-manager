@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 
 import BookingForm from '../Booking/BookingForm'
 import EventCalendar from '../Calendar/EventCalendar'
-import ClubSummary from '/ClubSummary'
+import ClubSummary from './ClubSummary'
 import UploadReport from '../Reports/UploadReport'
 
 import {
