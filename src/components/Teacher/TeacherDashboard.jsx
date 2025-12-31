@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
-import { db } from "../firebase";
+import { db } from ".../firebase";
 
 export default function TeacherDashboard() {
   const [bookings, setBookings] = useState([]);
