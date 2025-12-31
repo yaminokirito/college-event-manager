@@ -1,34 +1,33 @@
-import React, { useState } from "react"
+import { useState } from "react"
 import { storage, db } from "../../firebase"
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { addDoc, collection, serverTimestamp } from "firebase/firestore"
 
 export default function UploadReport({ booking, user }) {
   const [file, setFile] = useState(null)
-  const [uploading, setUploading] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  async function handleUpload() {
-    if (!file) return alert("Select a PDF first")
+  const uploadReport = async () => {
+    if (!file) return alert("Select a PDF file")
+
+    setLoading(true)
 
     try {
-      setUploading(true)
-
-      const storageRef = ref(
+      const fileRef = ref(
         storage,
-        `event-reports/${user.uid}/${booking.id}.pdf`
+        `reports/${booking.id}_${file.name}`
       )
 
-      await uploadBytes(storageRef, file)
-      const pdfUrl = await getDownloadURL(storageRef)
+      await uploadBytes(fileRef, file)
+      const downloadURL = await getDownloadURL(fileRef)
 
-      await addDoc(collection(db, "eventReports"), {
+      await addDoc(collection(db, "reports"), {
         bookingId: booking.id,
-        clubId: user.uid,
-        clubName: user.displayName || "Club",
-        title: booking.title,
-        pdfUrl,
-        uploadedAt: serverTimestamp(),
-        status: "submitted",
+        eventName: booking.eventName,
+        clubName: booking.clubName,
+        fileUrl: downloadURL,
+        uploadedBy: user.uid,
+        createdAt: serverTimestamp(),
       })
 
       alert("Report uploaded successfully")
@@ -36,26 +35,30 @@ export default function UploadReport({ booking, user }) {
     } catch (err) {
       console.error(err)
       alert("Upload failed")
-    } finally {
-      setUploading(false)
     }
+
+    setLoading(false)
   }
 
   return (
-    <div className="mt-3 p-3 bg-gray-800 rounded-lg">
+    <div className="bg-slate-900 p-4 rounded-lg mt-3">
+      <p className="text-sm text-green-400 mb-2">
+        Upload Event Report (PDF only)
+      </p>
+
       <input
         type="file"
         accept="application/pdf"
-        onChange={e => setFile(e.target.files[0])}
-        className="text-sm text-gray-300"
+        onChange={(e) => setFile(e.target.files[0])}
+        className="text-sm text-white"
       />
 
       <button
-        onClick={handleUpload}
-        disabled={uploading}
-        className="mt-2 px-3 py-1 bg-purple-500 text-black rounded text-sm"
+        onClick={uploadReport}
+        disabled={loading}
+        className="ml-3 bg-green-500 px-3 py-1 rounded text-black text-sm"
       >
-        {uploading ? "Uploading..." : "Upload Report (PDF)"}
+        {loading ? "Uploading..." : "Upload"}
       </button>
     </div>
   )

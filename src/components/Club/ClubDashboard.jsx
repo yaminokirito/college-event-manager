@@ -17,19 +17,18 @@ import { db } from "../../firebase"
 export default function ClubDashboard({ user }) {
   const [tab, setTab] = useState("approved")
   const [bookings, setBookings] = useState([])
+  const [reports, setReports] = useState([])
   const [loading, setLoading] = useState(false)
 
-  /* ---------------- LOAD BOOKINGS ---------------- */
+  /* ---------------- LOAD BOOKINGS + REPORTS ---------------- */
   useEffect(() => {
-    fetchBookings()
+    if (user) {
+      fetchBookings()
+      fetchReports()
+    }
   }, [tab, user])
 
   async function fetchBookings() {
-    if (!user) {
-      setBookings([])
-      return
-    }
-
     try {
       setLoading(true)
 
@@ -45,6 +44,19 @@ export default function ClubDashboard({ user }) {
       console.error("Error fetching bookings:", err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function fetchReports() {
+    try {
+      const q = query(
+        collection(db, "reports"),
+        where("uploadedBy", "==", user.uid)
+      )
+      const snap = await getDocs(q)
+      setReports(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    } catch (err) {
+      console.error("Error fetching reports:", err)
     }
   }
 
@@ -66,6 +78,10 @@ export default function ClubDashboard({ user }) {
       alert("Failed to save link")
     }
   }
+
+  /* ---------------- FIND REPORT FOR BOOKING ---------------- */
+  const getReportForBooking = bookingId =>
+    reports.find(r => r.bookingId === bookingId)
 
   return (
     <motion.div
@@ -115,7 +131,6 @@ export default function ClubDashboard({ user }) {
           </div>
         </div>
 
-        {/* Booking Cards */}
         {loading ? (
           <div className="text-gray-400">Loading...</div>
         ) : bookings.length === 0 ? (
@@ -124,65 +139,90 @@ export default function ClubDashboard({ user }) {
           </div>
         ) : (
           <ul className="space-y-4">
-            {bookings.map(b => (
-              <li
-                key={b.id}
-                className="p-4 rounded-lg bg-gray-700 space-y-3"
-              >
-                {/* INFO */}
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="font-semibold text-white">
-                      {b.title || "Untitled Event"}
+            {bookings.map(b => {
+              const report = getReportForBooking(b.id)
+
+              return (
+                <li
+                  key={b.id}
+                  className="p-4 rounded-lg bg-gray-700 space-y-3"
+                >
+                  {/* INFO */}
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-semibold text-white">
+                        {b.title || "Untitled Event"}
+                      </div>
+                      <div className="text-sm text-gray-300">
+                        {b.room} •{" "}
+                        {new Date(b.date).toLocaleDateString()}
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        {b.start} – {b.end}
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-300">
-                      {b.room} •{" "}
-                      {new Date(b.date).toLocaleDateString()}
-                    </div>
-                    <div className="text-sm text-gray-400">
-                      {b.start} – {b.end}
+
+                    {/* REGISTRATION LINK */}
+                    <div className="flex flex-col items-end gap-2">
+                      {b.registrationLink ? (
+                        <a
+                          href={b.registrationLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-3 py-1 rounded bg-green-500 text-black font-semibold"
+                        >
+                          Open link
+                        </a>
+                      ) : (
+                        <span className="text-xs text-gray-400 italic">
+                          No registration link
+                        </span>
+                      )}
+
+                      {tab === "approved" && (
+                        <button
+                          onClick={() =>
+                            setRegistrationLink(
+                              b.id,
+                              b.registrationLink
+                            )
+                          }
+                          className="px-3 py-1 rounded bg-blue-500 text-white text-sm"
+                        >
+                          {b.registrationLink ? "Edit link" : "Add link"}
+                        </button>
+                      )}
                     </div>
                   </div>
 
-                  {/* REGISTRATION LINK */}
-                  <div className="flex flex-col items-end gap-2">
-                    {b.registrationLink ? (
-                      <a
-                        href={b.registrationLink}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-3 py-1 rounded bg-green-500 text-black font-semibold"
-                      >
-                        Open link
-                      </a>
-                    ) : (
-                      <span className="text-xs text-gray-400 italic">
-                        No registration link
-                      </span>
-                    )}
-
-                    {tab === "approved" && (
-                      <button
-                        onClick={() =>
-                          setRegistrationLink(
-                            b.id,
-                            b.registrationLink
-                          )
-                        }
-                        className="px-3 py-1 rounded bg-blue-500 text-white text-sm"
-                      >
-                        {b.registrationLink ? "Edit link" : "Add link"}
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* 🔽 PDF UPLOAD — ONLY FOR APPROVED BOOKINGS */}
-                {b.status === "approved" && (
-                  <UploadReport booking={b} user={user} />
-                )}
-              </li>
-            ))}
+                  {/* 📄 REPORT SECTION */}
+                  {b.status === "approved" && (
+                    <>
+                      {report ? (
+                        <div className="bg-slate-900 p-3 rounded-lg flex justify-between items-center">
+                          <span className="text-green-400 text-sm">
+                            ✔ Report uploaded
+                          </span>
+                          <a
+                            href={report.fileUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-blue-400 underline text-sm"
+                          >
+                            View PDF
+                          </a>
+                        </div>
+                      ) : (
+                        <UploadReport
+                          booking={b}
+                          user={user}
+                        />
+                      )}
+                    </>
+                  )}
+                </li>
+              )
+            })}
           </ul>
         )}
       </div>
