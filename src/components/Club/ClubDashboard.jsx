@@ -1,231 +1,50 @@
-import React, { useEffect, useState } from "react"
-import { motion } from "framer-motion"
-import BookingForm from "../Booking/BookingForm"
-import EventCalendar from "../Calendar/EventCalendar"
-import UploadReport from "../Reports/UploadReport"
-
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  doc,
-  updateDoc,
-} from "firebase/firestore"
-import { db } from "../../firebase"
+import { useEffect, useState } from "react";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db } from "../firebase";
+import UploadReport from "../Reports/UploadReport";
 
 export default function ClubDashboard({ user }) {
-  const [tab, setTab] = useState("approved")
-  const [bookings, setBookings] = useState([])
-  const [reports, setReports] = useState([])
-  const [loading, setLoading] = useState(false)
+  const [bookings, setBookings] = useState([]);
 
-  /* ---------------- LOAD BOOKINGS + REPORTS ---------------- */
   useEffect(() => {
-    if (user) {
-      fetchBookings()
-      fetchReports()
-    }
-  }, [tab, user])
+    fetchBookings();
+  }, []);
 
-  async function fetchBookings() {
-    try {
-      setLoading(true)
+  const fetchBookings = async () => {
+    const q = query(
+      collection(db, "bookings"),
+      where("clubId", "==", user.uid)
+    );
 
-      const q = query(
-        collection(db, "bookings"),
-        where("clubId", "==", user.uid),
-        where("status", "==", tab)
-      )
-
-      const snap = await getDocs(q)
-      setBookings(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-    } catch (err) {
-      console.error("Error fetching bookings:", err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function fetchReports() {
-    try {
-      const q = query(
-        collection(db, "reports"),
-        where("uploadedBy", "==", user.uid)
-      )
-      const snap = await getDocs(q)
-      setReports(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-    } catch (err) {
-      console.error("Error fetching reports:", err)
-    }
-  }
-
-  /* ---------------- REGISTRATION LINK ---------------- */
-  async function setRegistrationLink(bookingId, currentLink) {
-    const val = window.prompt(
-      "Enter registration URL (leave blank to remove):",
-      currentLink || ""
-    )
-    if (val === null) return
-
-    try {
-      await updateDoc(doc(db, "bookings", bookingId), {
-        registrationLink: val || null,
-      })
-      fetchBookings()
-    } catch (err) {
-      console.error(err)
-      alert("Failed to save link")
-    }
-  }
-
-  /* ---------------- FIND REPORT FOR BOOKING ---------------- */
-  const getReportForBooking = bookingId =>
-    reports.find(r => r.bookingId === bookingId)
+    const snapshot = await getDocs(q);
+    setBookings(snapshot.docs.map(d => ({
+      id: d.id,
+      ...d.data()
+    })));
+  };
 
   return (
-    <motion.div
-      className="grid grid-cols-1 lg:grid-cols-2 gap-6"
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      {/* LEFT — ROOM REQUEST */}
-      <div className="p-6 rounded-2xl bg-gradient-to-b from-gray-800 to-gray-900 shadow-lg">
-        <h3 className="text-2xl font-semibold mb-4 text-blue-400">
-          Request a Room
-        </h3>
-        <BookingForm user={user} />
-      </div>
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold text-green-400">
+        My Room Bookings
+      </h2>
 
-      {/* RIGHT — CALENDAR */}
-      <div className="p-6 rounded-2xl bg-gradient-to-b from-gray-800 to-gray-900 shadow-lg">
-        <h3 className="text-2xl font-semibold mb-4 text-blue-400">
-          Event Calendar
-        </h3>
-        <EventCalendar />
-      </div>
+      {bookings.length === 0 && (
+        <p className="text-gray-400">No bookings yet</p>
+      )}
 
-      {/* BOOKINGS LIST */}
-      <div className="lg:col-span-2 p-6 rounded-2xl bg-gradient-to-b from-gray-800 to-gray-900 shadow-lg">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-2xl font-semibold text-blue-400">
-            Your Bookings
-          </h3>
+      {bookings.map(b => (
+        <div key={b.id} className="card">
+          <p><strong>Room:</strong> {b.room}</p>
+          <p><strong>Date:</strong> {b.date}</p>
+          <p><strong>Status:</strong> {b.status}</p>
 
-          {/* Tabs */}
-          <div className="flex gap-2">
-            {["pending", "approved", "rejected"].map(t => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`px-3 py-1 rounded-lg font-semibold transition ${
-                  tab === t
-                    ? "bg-green-500 text-black"
-                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                }`}
-              >
-                {t.charAt(0).toUpperCase() + t.slice(1)}
-              </button>
-            ))}
-          </div>
+          {/* ✅ Upload only when approved */}
+          {b.status === "approved" && (
+            <UploadReport booking={b} user={user} />
+          )}
         </div>
-
-        {loading ? (
-          <div className="text-gray-400">Loading...</div>
-        ) : bookings.length === 0 ? (
-          <div className="text-gray-400 italic">
-            No {tab} bookings.
-          </div>
-        ) : (
-          <ul className="space-y-4">
-            {bookings.map(b => {
-              const report = getReportForBooking(b.id)
-
-              return (
-                <li
-                  key={b.id}
-                  className="p-4 rounded-lg bg-gray-700 space-y-3"
-                >
-                  {/* INFO */}
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-semibold text-white">
-                        {b.title || "Untitled Event"}
-                      </div>
-                      <div className="text-sm text-gray-300">
-                        {b.room} •{" "}
-                        {new Date(b.date).toLocaleDateString()}
-                      </div>
-                      <div className="text-sm text-gray-400">
-                        {b.start} – {b.end}
-                      </div>
-                    </div>
-
-                    {/* REGISTRATION LINK */}
-                    <div className="flex flex-col items-end gap-2">
-                      {b.registrationLink ? (
-                        <a
-                          href={b.registrationLink}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-3 py-1 rounded bg-green-500 text-black font-semibold"
-                        >
-                          Open link
-                        </a>
-                      ) : (
-                        <span className="text-xs text-gray-400 italic">
-                          No registration link
-                        </span>
-                      )}
-
-                      {tab === "approved" && (
-                        <button
-                          onClick={() =>
-                            setRegistrationLink(
-                              b.id,
-                              b.registrationLink
-                            )
-                          }
-                          className="px-3 py-1 rounded bg-blue-500 text-white text-sm"
-                        >
-                          {b.registrationLink ? "Edit link" : "Add link"}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* 📄 REPORT SECTION */}
-                  {b.status === "approved" && (
-                    <>
-                      {report ? (
-                        <div className="bg-slate-900 p-3 rounded-lg flex justify-between items-center">
-                          <span className="text-green-400 text-sm">
-                            ✔ Report uploaded
-                          </span>
-                          <a
-                            href={report.fileUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-blue-400 underline text-sm"
-                          >
-                            View PDF
-                          </a>
-                        </div>
-                      ) : (
-                        <UploadReport
-                          booking={b}
-                          user={user}
-                        />
-                      )}
-                    </>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </div>
-    </motion.div>
-  )
+      ))}
+    </div>
+  );
 }
