@@ -17,13 +17,14 @@ export default function TeacherDashboard() {
 
   const [roomName, setRoomName] = useState("")
   const [capacity, setCapacity] = useState("")
+  const [addingRoom, setAddingRoom] = useState(false)
 
   useEffect(() => {
     fetchAll()
   }, [])
 
   /* ---------------- LOAD DATA ---------------- */
-  const fetchAll = async () => {
+  async function fetchAll() {
     const bookingSnap = await getDocs(collection(db, "bookings"))
     const reportSnap = await getDocs(collection(db, "reports"))
     const roomSnap = await getDocs(collection(db, "rooms"))
@@ -34,26 +35,36 @@ export default function TeacherDashboard() {
   }
 
   /* ---------------- STATUS UPDATE ---------------- */
-  const updateStatus = async (id, status) => {
+  async function updateStatus(id, status) {
     await updateDoc(doc(db, "bookings", id), { status })
     fetchAll()
   }
 
-  /* ---------------- ADD ROOM ---------------- */
-  const addRoom = async () => {
+  /* ---------------- ADD ROOM (FIXED) ---------------- */
+  async function addRoom(e) {
+    e.preventDefault()
+
     if (!roomName || !capacity) {
       alert("Enter room name and capacity")
       return
     }
 
-    await addDoc(collection(db, "rooms"), {
-      name: roomName,
-      capacity: Number(capacity),
-    })
+    try {
+      setAddingRoom(true)
 
-    setRoomName("")
-    setCapacity("")
-    fetchAll()
+      await addDoc(collection(db, "rooms"), {
+        name: roomName,
+        capacity: Number(capacity),
+      })
+
+      setRoomName("")
+      setCapacity("")
+      fetchAll()
+    } catch (err) {
+      alert("Failed to add room: " + err.message)
+    } finally {
+      setAddingRoom(false)
+    }
   }
 
   /* ---------------- FILTERS ---------------- */
@@ -98,11 +109,11 @@ export default function TeacherDashboard() {
         />
       </div>
 
-      {/* ================= ADD ROOM ================= */}
+      {/* ================= ADD ROOM (FIXED UI) ================= */}
       <div className="bg-slate-900 p-4 rounded-xl">
         <h2 className="text-green-400 mb-3">Add Room</h2>
 
-        <div className="flex gap-3">
+        <form onSubmit={addRoom} className="flex gap-3">
           <input
             type="text"
             placeholder="Room name"
@@ -115,10 +126,14 @@ export default function TeacherDashboard() {
             value={capacity}
             onChange={e => setCapacity(e.target.value)}
           />
-          <button onClick={addRoom} className="btn-primary">
-            Add
+          <button
+            type="submit"
+            disabled={addingRoom}
+            className="btn-primary"
+          >
+            {addingRoom ? "Adding..." : "Add"}
           </button>
-        </div>
+        </form>
 
         <ul className="mt-4 space-y-2">
           {rooms.map(r => (
