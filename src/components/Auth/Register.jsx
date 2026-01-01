@@ -9,18 +9,29 @@ export default function Register() {
   const [email, setEmail] = useState('')
   const [pass, setPass] = useState('')
   const [role, setRole] = useState('student')
+  const [clubName, setClubName] = useState('')
   const [loading, setLoading] = useState(false)
+
   const nav = useNavigate()
 
   const submit = async (e) => {
     e.preventDefault()
     setLoading(true)
 
+    // 🔒 Validation: club must enter club name
+    if (role === 'club' && clubName.trim() === '') {
+      alert('Please enter club name')
+      setLoading(false)
+      return
+    }
+
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, pass)
+
       await setDoc(doc(db, 'users', cred.user.uid), {
         email,
         role,
+        club_name: role === 'club' ? clubName : null,
         createdAt: new Date(),
       })
 
@@ -35,7 +46,9 @@ export default function Register() {
 
   return (
     <div className="max-w-md mx-auto card mt-20">
-      <h2 className="text-2xl font-bold mb-4 text-green-400">Create Account</h2>
+      <h2 className="text-2xl font-bold mb-4 text-green-400">
+        Create Account
+      </h2>
 
       <form onSubmit={submit} className="flex flex-col gap-4">
         <input
@@ -62,6 +75,16 @@ export default function Register() {
           <option value="teacher">Teacher</option>
         </select>
 
+        {/* 👇 CLUB NAME FIELD (ONLY FOR CLUBS) */}
+        {role === 'club' && (
+          <input
+            required
+            placeholder="Club Name"
+            value={clubName}
+            onChange={(e) => setClubName(e.target.value)}
+          />
+        )}
+
         <button type="submit" className="btn-primary" disabled={loading}>
           {loading ? 'Creating account...' : 'Create account'}
         </button>
@@ -70,4 +93,4 @@ export default function Register() {
   )
 }
 
-console.log("Register loaded");
+console.log("Register loaded")
