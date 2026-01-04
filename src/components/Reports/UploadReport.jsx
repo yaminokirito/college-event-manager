@@ -32,13 +32,13 @@ export default function UploadReport({ booking, user }) {
       }
 
       await addDoc(collection(db, "reports"), {
-        bookingId: booking.id,
-        eventName: booking.eventName,
-        clubName: booking.clubName,
-        fileUrl: data.secure_url,
-        uploadedBy: user.uid,
-        createdAt: serverTimestamp(),
-      })
+  bookingId: booking.id,
+  eventName: booking.eventName || booking.title || "Unknown Event",
+  clubName: booking.clubName || user.email || "Unknown Club",
+  fileUrl: data.secure_url,
+  uploadedBy: user.uid,
+  createdAt: serverTimestamp(),
+})
 
       alert("Report uploaded successfully")
       setFile(null)
