@@ -7,51 +7,44 @@ export default function UploadReport({ booking, user }) {
   const [loading, setLoading] = useState(false)
 
   const uploadReport = async () => {
-    if (!file) {
-      alert("Select a PDF file")
-      return
-    }
+    if (!file) return alert("Select a PDF file")
 
     setLoading(true)
 
     try {
-      // 1️⃣ Upload to Cloudinary
       const formData = new FormData()
       formData.append("file", file)
       formData.append("upload_preset", "eventmanagement")
 
-      const cloudinaryRes = await fetch(
-  "https://api.cloudinary.com/v1_1/dtnsos9cm/raw/upload",
+      const res = await fetch(
+        "https://api.cloudinary.com/v1_1/dtnsos9cm/raw/upload",
         {
           method: "POST",
           body: formData,
         }
       )
 
-      const cloudinaryData = await cloudinaryRes.json()
+      const data = await res.json()
+      console.log("Cloudinary response:", data)
 
-      if (!cloudinaryData.secure_url) {
-        console.error(cloudinaryData)
-        alert("Cloudinary upload failed")
-        setLoading(false)
-        return
+      if (!res.ok || !data.secure_url) {
+        throw new Error(data.error?.message || "Cloudinary upload failed")
       }
 
-      // 2️⃣ Save Cloudinary URL in Firestore
       await addDoc(collection(db, "reports"), {
         bookingId: booking.id,
         eventName: booking.eventName,
         clubName: booking.clubName,
-        fileUrl: cloudinaryData.secure_url,
+        fileUrl: data.secure_url,
         uploadedBy: user.uid,
         createdAt: serverTimestamp(),
       })
 
-      alert("Report uploaded successfully 🎉")
+      alert("Report uploaded successfully")
       setFile(null)
     } catch (err) {
-      console.error(err)
-      alert("Upload failed")
+      console.error("UPLOAD ERROR:", err)
+      alert(err.message)
     }
 
     setLoading(false)
