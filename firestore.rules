@@ -2,33 +2,90 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // All users can read event listings
+    /* ================= HELPERS ================= */
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function userRole() {
+      return isAuth() && userDoc().exists()
+        ? userDoc().data.role
+        : null;
+    }
+
+    function isTeacher() {
+      return userRole() == "teacher";
+    }
+
+    function isClub() {
+      return userRole() == "club";
+    }
+
+    function isStudent() {
+      return userRole() == "student";
+    }
+
+    /* ================= BOOKINGS ================= */
     match /bookings/{bookingId} {
+      // Everyone can view bookings (calendar)
       allow read: if true;
 
-      // Only club leads can create bookings
-      allow create: if request.auth != null && 
-                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "club";
+      // Clubs can create booking requests
+      allow create: if isClub();
 
-      // Only teachers can update bookings (approve/reject)
-      allow update: if request.auth != null && 
-                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "teacher";
+      // Only teachers can approve / reject
+      allow update: if isTeacher();
 
-      // No one deletes bookings
+      // Nobody deletes bookings
       allow delete: if false;
     }
 
-    // Users collection — everyone can read their own profile
-    match /users/{userId} {
-      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null;
+    /* ================= ROOMS ================= */
+    match /rooms/{roomId} {
+      // Logged-in users can see rooms
+      allow read: if isAuth();
+
+      // Only teachers manage rooms
+      allow create, update, delete: if isTeacher();
     }
 
-    // Optional: event registrations
+    /* ================= REPORTS ================= */
+    match /reports/{reportId} {
+      // Logged-in users can read reports
+      allow read: if isAuth();
+
+      // Only clubs upload reports
+      allow create: if isClub();
+
+      // No editing or deleting reports
+      allow update, delete: if false;
+    }
+
+    /* ================= USERS ================= */
+    match /users/{userId} {
+      // Users can read & update ONLY their own profile
+      allow read, update: if isAuth() && request.auth.uid == userId;
+
+      // Users can create their own profile at registration
+      allow create: if isAuth() && request.auth.uid == userId;
+
+      // Nobody deletes user profiles
+      allow delete: if false;
+    }
+
+    /* ================= REGISTRATIONS ================= */
     match /registrations/{regId} {
+      // Everyone can see registrations
       allow read: if true;
-      allow create: if request.auth != null && 
-                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "student";
+
+      // Only students can register
+      allow create: if isStudent();
+
+      // No updates or deletes
       allow update, delete: if false;
     }
   }

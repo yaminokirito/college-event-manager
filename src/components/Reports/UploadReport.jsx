@@ -1,6 +1,5 @@
 import { useState } from "react"
-import { storage, db } from "../../firebase"
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
+import { db } from "../../firebase"
 import { addDoc, collection, serverTimestamp } from "firebase/firestore"
 
 export default function UploadReport({ booking, user }) {
@@ -8,29 +7,47 @@ export default function UploadReport({ booking, user }) {
   const [loading, setLoading] = useState(false)
 
   const uploadReport = async () => {
-    if (!file) return alert("Select a PDF file")
+    if (!file) {
+      alert("Select a PDF file")
+      return
+    }
 
     setLoading(true)
 
     try {
-      const fileRef = ref(
-        storage,
-        `reports/${booking.id}_${file.name}`
+      // 1️⃣ Upload to Cloudinary
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("upload_preset", "eventmanagement")
+
+      const cloudinaryRes = await fetch(
+  "https://api.cloudinary.com/v1_1/dtnsos9cm/raw/upload",
+        {
+          method: "POST",
+          body: formData,
+        }
       )
 
-      await uploadBytes(fileRef, file)
-      const downloadURL = await getDownloadURL(fileRef)
+      const cloudinaryData = await cloudinaryRes.json()
 
+      if (!cloudinaryData.secure_url) {
+        console.error(cloudinaryData)
+        alert("Cloudinary upload failed")
+        setLoading(false)
+        return
+      }
+
+      // 2️⃣ Save Cloudinary URL in Firestore
       await addDoc(collection(db, "reports"), {
         bookingId: booking.id,
         eventName: booking.eventName,
         clubName: booking.clubName,
-        fileUrl: downloadURL,
+        fileUrl: cloudinaryData.secure_url,
         uploadedBy: user.uid,
         createdAt: serverTimestamp(),
       })
 
-      alert("Report uploaded successfully")
+      alert("Report uploaded successfully 🎉")
       setFile(null)
     } catch (err) {
       console.error(err)
