@@ -7,7 +7,15 @@ export default function UploadReport({ booking, user }) {
   const [loading, setLoading] = useState(false)
 
   const uploadReport = async () => {
-    if (!file) return alert("Select a PDF file")
+    if (!file) {
+      alert("Select a PDF file")
+      return
+    }
+
+    if (file.type !== "application/pdf") {
+      alert("Only PDF files are allowed")
+      return
+    }
 
     setLoading(true)
 
@@ -15,9 +23,10 @@ export default function UploadReport({ booking, user }) {
       const formData = new FormData()
       formData.append("file", file)
       formData.append("upload_preset", "eventmanagement")
+      formData.append("resource_type", "raw")
 
       const res = await fetch(
-        "https://api.cloudinary.com/v1_1/dtnsos9cm/raw/upload",
+        "https://api.cloudinary.com/v1_1/dtnsos9cm/auto/upload",
         {
           method: "POST",
           body: formData,
@@ -32,13 +41,14 @@ export default function UploadReport({ booking, user }) {
       }
 
       await addDoc(collection(db, "reports"), {
-  bookingId: booking.id,
-  eventName: booking.eventName || booking.title || "Unknown Event",
-  clubName: booking.clubName || user.email || "Unknown Club",
-  fileUrl: data.secure_url,
-  uploadedBy: user.uid,
-  createdAt: serverTimestamp(),
-})
+        bookingId: booking.id,
+        eventName: booking.eventName || booking.title || "Unknown Event",
+        clubName: booking.clubName || user.email || "Unknown Club",
+        pdfUrl: data.secure_url,
+        uploadedBy: user.uid,
+        createdAt: serverTimestamp(),
+        status: "submitted",
+      })
 
       alert("Report uploaded successfully")
       setFile(null)
