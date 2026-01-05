@@ -24,6 +24,7 @@ export default function UploadReport({ booking, user }) {
       formData.append("file", file)
       formData.append("upload_preset", "eventmanagement")
       formData.append("resource_type", "raw")
+      formData.append("content_type", "application/pdf")
 
       const res = await fetch(
         "https://api.cloudinary.com/v1_1/dtnsos9cm/auto/upload",
