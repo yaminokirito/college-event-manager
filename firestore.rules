@@ -7,85 +7,61 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function userDoc() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid));
-    }
-
     function userRole() {
-      return isAuth() && userDoc().exists()
-        ? userDoc().data.role
-        : null;
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
 
     function isTeacher() {
-      return userRole() == "teacher";
+      return isAuth() && userRole() == "teacher";
     }
 
     function isClub() {
-      return userRole() == "club";
+      return isAuth() && userRole() == "club";
     }
 
     function isStudent() {
-      return userRole() == "student";
+      return isAuth() && userRole() == "student";
+    }
+
+    /* ================= USERS ================= */
+    match /users/{userId} {
+      // 🔑 REQUIRED so rules can read roles
+      allow read: if isAuth();
+
+      // Users can update ONLY their own profile
+      allow update: if isAuth() && request.auth.uid == userId;
+
+      // Users create their profile on signup
+      allow create: if isAuth() && request.auth.uid == userId;
+
+      allow delete: if false;
     }
 
     /* ================= BOOKINGS ================= */
     match /bookings/{bookingId} {
-      // Everyone can view bookings (calendar)
       allow read: if true;
-
-      // Clubs can create booking requests
       allow create: if isClub();
-
-      // Only teachers can approve / reject
       allow update: if isTeacher();
-
-      // Nobody deletes bookings
       allow delete: if false;
     }
 
     /* ================= ROOMS ================= */
     match /rooms/{roomId} {
-      // Logged-in users can see rooms
       allow read: if isAuth();
-
-      // Only teachers manage rooms
       allow create, update, delete: if isTeacher();
     }
 
     /* ================= REPORTS ================= */
     match /reports/{reportId} {
-      // Logged-in users can read reports
       allow read: if isAuth();
-
-      // Only clubs upload reports
       allow create: if isClub();
-
-      // No editing or deleting reports
       allow update, delete: if false;
-    }
-
-    /* ================= USERS ================= */
-    match /users/{userId} {
-      // Users can read & update ONLY their own profile
-      allow read, update: if isAuth() && request.auth.uid == userId;
-
-      // Users can create their own profile at registration
-      allow create: if isAuth() && request.auth.uid == userId;
-
-      // Nobody deletes user profiles
-      allow delete: if false;
     }
 
     /* ================= REGISTRATIONS ================= */
     match /registrations/{regId} {
-      // Everyone can see registrations
       allow read: if true;
-
-      // Only students can register
       allow create: if isStudent();
-
-      // No updates or deletes
       allow update, delete: if false;
     }
   }
