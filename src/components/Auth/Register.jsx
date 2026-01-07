@@ -19,7 +19,7 @@ export default function Register() {
     setLoading(true)
 
     // 🔒 Validation: club must enter club name
-    if (role === 'club' && clubName.trim() === '') {
+    if (role === 'club' && club_Name.trim() === '') {
       alert('Please enter club name')
       setLoading(false)
       return
@@ -31,7 +31,7 @@ export default function Register() {
       await setDoc(doc(db, 'users', cred.user.uid), {
         email,
         role,
-        club_name: role === 'club' ? clubName : null,
+        club_name: role === 'club' ? club_Name : null,
         createdAt: new Date(),
       })
 
@@ -80,8 +80,8 @@ export default function Register() {
           <input
             required
             placeholder="Club Name"
-            value={clubName}
-            onChange={(e) => setClubName(e.target.value)}
+            value={club_Name}
+            onChange={(e) => setClub_Name(e.target.value)}
           />
         )}
 
