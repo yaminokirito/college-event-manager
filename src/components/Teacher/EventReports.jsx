@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react"
-import { db } from "../../firebase"
+import { db, storage } from "../../firebase"
 import { collection, getDocs } from "firebase/firestore"
+import { ref as storageRef, getDownloadURL } from "firebase/storage"
 
 export default function EventReports() {
   const [reports, setReports] = useState([])
@@ -17,6 +18,28 @@ export default function EventReports() {
         ...d.data(),
       }))
     )
+  }
+
+  async function openPdf(r) {
+    try {
+      if (!r?.pdfUrl) {
+        alert("No PDF available for this report")
+        return
+      }
+
+      let url = r.pdfUrl
+
+      if (!/^https?:\/\//i.test(url)) {
+        // assume it's a Firebase Storage path; request a download URL
+        const ref = storageRef(storage, url)
+        url = await getDownloadURL(ref)
+      }
+
+      window.open(url, "_blank", "noopener")
+    } catch (err) {
+      console.error("Unable to open PDF:", err)
+      alert("Unable to open PDF")
+    }
   }
 
   return (
@@ -46,14 +69,12 @@ export default function EventReports() {
               </div>
             </div>
 
-            <a
-  href={r.pdfUrl}
-  target="_blank"
-  rel="noreferrer"
-  className="px-3 py-1 bg-blue-500 text-black rounded"
->
-  View PDF
-</a>
+            <button
+              onClick={() => openPdf(r)}
+              className="px-3 py-1 bg-blue-500 text-black rounded"
+            >
+              View PDF
+            </button>
           </div>
         ))
       )}
