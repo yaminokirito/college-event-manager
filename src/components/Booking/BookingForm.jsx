@@ -3,8 +3,6 @@ import {
   addDoc,
   collection,
   getDocs,
-  getDoc,
-  doc,
   serverTimestamp,
 } from "firebase/firestore"
 import { db } from "../../firebase"
@@ -33,7 +31,7 @@ export default function BookingForm({ user }) {
         if (list.length > 0) setRoom(list[0].name)
       } catch (err) {
         console.error("Room load error:", err)
-        setMsg("❌ Unable to load rooms")
+        setMsg("❌ Unable to load rooms (check permissions)")
       }
     }
 
@@ -55,6 +53,11 @@ export default function BookingForm({ user }) {
       return
     }
 
+    if (!room) {
+      setMsg("❌ No rooms available")
+      return
+    }
+
     if (end <= start) {
       setMsg("❌ End time must be after start time")
       return
@@ -63,17 +66,6 @@ export default function BookingForm({ user }) {
     try {
       setLoading(true)
 
-      // 🔑 FETCH CLUB NAME FROM USERS COLLECTION
-      const userSnap = await getDoc(doc(db, "users", user.uid))
-
-      if (!userSnap.exists()) {
-        setMsg("❌ Club profile not found")
-        setLoading(false)
-        return
-      }
-
-      const clubName = userSnap.data().club_name
-
       await addDoc(collection(db, "bookings"), {
         title,
         room,
@@ -81,10 +73,8 @@ export default function BookingForm({ user }) {
         start,
         end,
         status: "pending",
-
         clubId: user.uid,
-        clubName: clubName, // ✅ REAL CLUB NAME
-
+        clubName: user.displayName || "Unknown Club",
         createdAt: serverTimestamp(),
       })
 
@@ -113,11 +103,15 @@ export default function BookingForm({ user }) {
         onChange={e => setRoom(e.target.value)}
         disabled={rooms.length === 0}
       >
-        {rooms.map(r => (
-          <option key={r.id} value={r.name}>
-            {r.name}
-          </option>
-        ))}
+        {rooms.length === 0 ? (
+          <option>No rooms available</option>
+        ) : (
+          rooms.map(r => (
+            <option key={r.id} value={r.name}>
+              {r.name}
+            </option>
+          ))
+        )}
       </select>
 
       <input
@@ -145,7 +139,7 @@ export default function BookingForm({ user }) {
       <button
         type="submit"
         className="btn-primary"
-        disabled={loading}
+        disabled={loading || rooms.length === 0}
       >
         {loading ? "Submitting..." : "Submit request"}
       </button>
