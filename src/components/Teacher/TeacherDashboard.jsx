@@ -29,24 +29,17 @@ export default function TeacherDashboard() {
     const reportSnap = await getDocs(collection(db, "reports"))
     const roomSnap = await getDocs(collection(db, "rooms"))
 
-    const bookingData = bookingSnap.docs.map(d => ({
-      id: d.id,
-      ...d.data(),
-    }))
+    setBookings(
+      bookingSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+    )
 
-    const reportData = reportSnap.docs.map(d => {
-      const data = { id: d.id, ...d.data() }
+    setReports(
+      reportSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+    )
 
-      // 🔍 DEBUG PDF URL
-      console.log("Report fetched:", data)
-      console.log("PDF URL:", data.pdfUrl)
-
-      return data
-    })
-
-    setBookings(bookingData)
-    setReports(reportData)
-    setRooms(roomSnap.docs.map(d => ({ id: d.id, ...d.data() })))
+    setRooms(
+      roomSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+    )
   }
 
   /* ---------------- STATUS UPDATE ---------------- */
@@ -106,6 +99,51 @@ export default function TeacherDashboard() {
         <div className="card">Reports Submitted {reports.length}</div>
       </div>
 
+      {/* ================= ADD ROOM ================= */}
+      <div className="bg-slate-900 p-4 rounded-xl">
+        <h2 className="text-green-400 mb-3">Add New Room</h2>
+
+        <form onSubmit={addRoom} className="flex gap-3 flex-wrap">
+          <input
+            placeholder="Room name"
+            value={roomName}
+            onChange={e => setRoomName(e.target.value)}
+            className="px-3 py-2 rounded bg-gray-800 text-white"
+          />
+
+          <input
+            type="number"
+            placeholder="Capacity"
+            value={capacity}
+            onChange={e => setCapacity(e.target.value)}
+            className="px-3 py-2 rounded bg-gray-800 text-white"
+          />
+
+          <button
+            type="submit"
+            disabled={addingRoom}
+            className="bg-green-500 px-4 py-2 rounded text-black"
+          >
+            {addingRoom ? "Adding..." : "Add Room"}
+          </button>
+        </form>
+
+        {/* Existing rooms */}
+        <div className="mt-4 space-y-2">
+          {rooms.map(r => (
+            <div
+              key={r.id}
+              className="flex justify-between bg-gray-800 p-2 rounded"
+            >
+              <span>{r.name}</span>
+              <span className="text-sm text-gray-400">
+                Capacity: {r.capacity}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* ================= CALENDAR ================= */}
       <div className="bg-slate-900 p-4 rounded-xl">
         <h2 className="mb-2 text-blue-400">Event Calendar</h2>
@@ -163,57 +201,12 @@ export default function TeacherDashboard() {
         ))}
       </div>
 
-      {/* ================= APPROVED EVENTS ================= */}
-      <div className="bg-slate-900 p-4 rounded-xl">
-        <h2 className="text-blue-400 mb-2">Approved Events</h2>
-
-        {approved.map(b => {
-          const report = getReportForBooking(b.id)
-
-          // 🔍 DEBUG per event
-          console.log("Event:", b.id, "PDF:", report?.pdfUrl)
-
-          return (
-            <div
-              key={b.id}
-              className="mt-3 p-3 bg-gray-800 rounded-lg flex justify-between items-center"
-            >
-              <div>
-                <p className="font-semibold">{b.title}</p>
-                <p className="text-sm text-gray-400">
-                  {b.clubName} • {b.room}
-                </p>
-              </div>
-
-              {report?.pdfUrl ? (
-                <a
-                  href={report.pdfUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-green-400 underline text-sm"
-                >
-                  View PDF
-                </a>
-              ) : (
-                <span className="text-yellow-400 text-sm">
-                  Awaiting report
-                </span>
-              )}
-            </div>
-          )
-        })}
-      </div>
-
       {/* ================= CLUB SUMMARY ================= */}
       <div className="bg-slate-900 p-4 rounded-xl">
-        <h2 className="text-purple-400 mb-3">
-          Club Event Summary
-        </h2>
+        <h2 className="text-purple-400 mb-3">Club Event Summary</h2>
 
         {Object.keys(clubSummary).length === 0 ? (
-          <p className="text-gray-400">
-            No completed events yet
-          </p>
+          <p className="text-gray-400">No completed events yet</p>
         ) : (
           <ul className="space-y-2">
             {Object.entries(clubSummary).map(([club, count]) => (
@@ -222,9 +215,7 @@ export default function TeacherDashboard() {
                 className="flex justify-between bg-gray-800 p-3 rounded"
               >
                 <span>{club}</span>
-                <span className="font-semibold">
-                  {count} events
-                </span>
+                <span className="font-semibold">{count} events</span>
               </li>
             ))}
           </ul>
