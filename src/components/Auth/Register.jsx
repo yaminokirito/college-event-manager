@@ -2,7 +2,7 @@
 import React, { useState } from 'react'
 import { createUserWithEmailAndPassword } from 'firebase/auth'
 import { auth, db } from '../../firebase'
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
+import { doc, setDoc } from 'firebase/firestore'
 import { useNavigate } from 'react-router-dom'
 
 export default function Register() {
@@ -14,10 +14,11 @@ export default function Register() {
 
   const nav = useNavigate()
 
-  const submit = async e => {
+  const submit = async (e) => {
     e.preventDefault()
     setLoading(true)
 
+    // 🔒 Validation: club must enter club name
     if (role === 'club' && clubName.trim() === '') {
       alert('Please enter club name')
       setLoading(false)
@@ -31,7 +32,7 @@ export default function Register() {
         email,
         role,
         club_name: role === 'club' ? clubName : null,
-        createdAt: serverTimestamp(),
+        createdAt: new Date(),
       })
 
       alert('Registration successful!')
@@ -50,31 +51,46 @@ export default function Register() {
       </h2>
 
       <form onSubmit={submit} className="flex flex-col gap-4">
-        <input required placeholder="Email" value={email}
-          onChange={e => setEmail(e.target.value)} />
+        <input
+          required
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
 
-        <input required type="password" placeholder="Password"
-          value={pass} onChange={e => setPass(e.target.value)} />
+        <input
+          required
+          type="password"
+          placeholder="Password"
+          value={pass}
+          onChange={(e) => setPass(e.target.value)}
+        />
 
-        <select value={role} onChange={e => setRole(e.target.value)}>
+        <select
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
+        >
           <option value="student">Student</option>
           <option value="club">Club Lead</option>
           <option value="teacher">Teacher</option>
         </select>
 
+        {/* 👇 CLUB NAME FIELD (ONLY FOR CLUBS) */}
         {role === 'club' && (
           <input
             required
             placeholder="Club Name"
             value={clubName}
-            onChange={e => setClubName(e.target.value)}
+            onChange={(e) => setClubName(e.target.value)}
           />
         )}
 
-        <button className="btn-primary" disabled={loading}>
+        <button type="submit" className="btn-primary" disabled={loading}>
           {loading ? 'Creating account...' : 'Create account'}
         </button>
       </form>
     </div>
   )
 }
+
+console.log("Register loaded")
