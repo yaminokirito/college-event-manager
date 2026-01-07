@@ -19,12 +19,20 @@ export default function EventReports() {
 
       const snap = await getDocs(q)
 
-      setReports(
-        snap.docs.map(doc => ({
+      const data = snap.docs.map(doc => {
+        const report = {
           id: doc.id,
           ...doc.data(),
-        }))
-      )
+        }
+
+        // 🔍 DEBUG: log pdfUrl from Firestore
+        console.log("Fetched report:", report)
+        console.log("PDF URL:", report.pdfUrl)
+
+        return report
+      })
+
+      setReports(data)
     } catch (err) {
       console.error("Failed to load reports:", err)
     } finally {
@@ -41,46 +49,51 @@ export default function EventReports() {
       {reports.length === 0 ? (
         <p className="text-gray-400 italic">No reports submitted</p>
       ) : (
-        reports.map(r => (
-          <div
-            key={r.id}
-            className="p-4 bg-gray-700 rounded-lg flex justify-between items-center"
-          >
-            {/* LEFT INFO */}
-            <div>
-              <div className="font-semibold text-white">
-                {r.eventName || "Untitled Event"}
-              </div>
+        reports.map(r => {
+          // 🔍 DEBUG during render
+          console.log("Rendering report:", r.id, r.pdfUrl)
 
-              <div className="text-sm text-gray-300">
-                Club: {r.clubName || "Unknown"}
-              </div>
-
-              <div className="text-xs text-gray-400">
-                Uploaded on:{" "}
-                {r.createdAt?.toDate
-                  ? r.createdAt.toDate().toLocaleString()
-                  : "—"}
-              </div>
-            </div>
-
-            {/* RIGHT ACTION */}
-            {r.pdfUrl ? (
-               <a
-              href={r.fileUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="px-3 py-1 bg-blue-500 text-black rounded"
+          return (
+            <div
+              key={r.id}
+              className="p-4 bg-gray-700 rounded-lg flex justify-between items-center"
             >
-              View PDF
-            </a>
-            ) : (
-              <span className="text-xs text-red-400 italic">
-                PDF missing
-              </span>
-            )}
-          </div>
-        ))
+              {/* LEFT INFO */}
+              <div>
+                <div className="font-semibold text-white">
+                  {r.eventName || "Untitled Event"}
+                </div>
+
+                <div className="text-sm text-gray-300">
+                  Club: {r.clubName || "Unknown"}
+                </div>
+
+                <div className="text-xs text-gray-400">
+                  Uploaded on:{" "}
+                  {r.createdAt?.toDate
+                    ? r.createdAt.toDate().toLocaleString()
+                    : "—"}
+                </div>
+              </div>
+
+              {/* RIGHT ACTION */}
+              {r.pdfUrl ? (
+                <a
+                  href={r.pdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-black rounded"
+                >
+                  View PDF
+                </a>
+              ) : (
+                <span className="text-xs text-red-400 italic">
+                  PDF missing
+                </span>
+              )}
+            </div>
+          )
+        })
       )}
     </div>
   )

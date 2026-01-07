@@ -29,8 +29,23 @@ export default function TeacherDashboard() {
     const reportSnap = await getDocs(collection(db, "reports"))
     const roomSnap = await getDocs(collection(db, "rooms"))
 
-    setBookings(bookingSnap.docs.map(d => ({ id: d.id, ...d.data() })))
-    setReports(reportSnap.docs.map(d => ({ id: d.id, ...d.data() })))
+    const bookingData = bookingSnap.docs.map(d => ({
+      id: d.id,
+      ...d.data(),
+    }))
+
+    const reportData = reportSnap.docs.map(d => {
+      const data = { id: d.id, ...d.data() }
+
+      // 🔍 DEBUG PDF URL
+      console.log("Report fetched:", data)
+      console.log("PDF URL:", data.pdfUrl)
+
+      return data
+    })
+
+    setBookings(bookingData)
+    setReports(reportData)
     setRooms(roomSnap.docs.map(d => ({ id: d.id, ...d.data() })))
   }
 
@@ -40,7 +55,7 @@ export default function TeacherDashboard() {
     fetchAll()
   }
 
-  /* ---------------- ADD ROOM (FIXED) ---------------- */
+  /* ---------------- ADD ROOM ---------------- */
   async function addRoom(e) {
     e.preventDefault()
 
@@ -76,7 +91,8 @@ export default function TeacherDashboard() {
 
   /* ---------------- CLUB SUMMARY ---------------- */
   const clubSummary = approved.reduce((acc, b) => {
-    acc[b.club_Name] = (acc[b.club_Name] || 0) + 1
+    const club = b.clubName || "Unknown"
+    acc[club] = (acc[club] || 0) + 1
     return acc
   }, {})
 
@@ -107,41 +123,6 @@ export default function TeacherDashboard() {
             ) : null
           }}
         />
-      </div>
-
-      {/* ================= ADD ROOM (FIXED UI) ================= */}
-      <div className="bg-slate-900 p-4 rounded-xl">
-        <h2 className="text-green-400 mb-3">Add Room</h2>
-
-        <form onSubmit={addRoom} className="flex gap-3">
-          <input
-            type="text"
-            placeholder="Room name"
-            value={roomName}
-            onChange={e => setRoomName(e.target.value)}
-          />
-          <input
-            type="number"
-            placeholder="Capacity"
-            value={capacity}
-            onChange={e => setCapacity(e.target.value)}
-          />
-          <button
-            type="submit"
-            disabled={addingRoom}
-            className="btn-primary"
-          >
-            {addingRoom ? "Adding..." : "Add"}
-          </button>
-        </form>
-
-        <ul className="mt-4 space-y-2">
-          {rooms.map(r => (
-            <li key={r.id} className="text-sm text-gray-300">
-              {r.name} — {r.capacity} seats
-            </li>
-          ))}
-        </ul>
       </div>
 
       {/* ================= APPROVALS ================= */}
@@ -189,6 +170,9 @@ export default function TeacherDashboard() {
         {approved.map(b => {
           const report = getReportForBooking(b.id)
 
+          // 🔍 DEBUG per event
+          console.log("Event:", b.id, "PDF:", report?.pdfUrl)
+
           return (
             <div
               key={b.id}
@@ -197,15 +181,15 @@ export default function TeacherDashboard() {
               <div>
                 <p className="font-semibold">{b.title}</p>
                 <p className="text-sm text-gray-400">
-                  {b.club_Name} • {b.room}
+                  {b.clubName} • {b.room}
                 </p>
               </div>
 
-              {report ? (
+              {report?.pdfUrl ? (
                 <a
-                  href={report.fileUrl}
+                  href={report.pdfUrl}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   className="text-green-400 underline text-sm"
                 >
                   View PDF
