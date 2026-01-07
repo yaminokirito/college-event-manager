@@ -66,14 +66,14 @@ export default function EventReports() {
 
             {/* RIGHT ACTION */}
             {r.pdfUrl ? (
-              <a
-                href={r.pdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-black rounded font-medium"
-              >
-                View PDF
-              </a>
+               <a
+              href={r.fileUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-1 bg-blue-500 text-black rounded"
+            >
+              View PDF
+            </a>
             ) : (
               <span className="text-xs text-red-400 italic">
                 PDF missing

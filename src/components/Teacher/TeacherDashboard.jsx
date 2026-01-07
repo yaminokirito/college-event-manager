@@ -76,7 +76,7 @@ export default function TeacherDashboard() {
 
   /* ---------------- CLUB SUMMARY ---------------- */
   const clubSummary = approved.reduce((acc, b) => {
-    acc[b.clubName] = (acc[b.clubName] || 0) + 1
+    acc[b.club_Name] = (acc[b.club_Name] || 0) + 1
     return acc
   }, {})
 
@@ -197,7 +197,7 @@ export default function TeacherDashboard() {
               <div>
                 <p className="font-semibold">{b.title}</p>
                 <p className="text-sm text-gray-400">
-                  {b.clubName} • {b.room}
+                  {b.club_Name} • {b.room}
                 </p>
               </div>
 
