@@ -1,15 +1,15 @@
 // src/components/Auth/Register.jsx
-import React, { useState } from 'react'
-import { createUserWithEmailAndPassword } from 'firebase/auth'
-import { auth, db } from '../../firebase'
-import { doc, setDoc } from 'firebase/firestore'
-import { useNavigate } from 'react-router-dom'
+import React, { useState } from "react"
+import { createUserWithEmailAndPassword } from "firebase/auth"
+import { auth, db } from "../../firebase"
+import { doc, setDoc } from "firebase/firestore"
+import { useNavigate } from "react-router-dom"
 
 export default function Register() {
-  const [email, setEmail] = useState('')
-  const [pass, setPass] = useState('')
-  const [role, setRole] = useState('student')
-  const [clubName, setClubName] = useState('')
+  const [email, setEmail] = useState("")
+  const [pass, setPass] = useState("")
+  const [role, setRole] = useState("student")
+  const [clubName, setClubName] = useState("")
   const [loading, setLoading] = useState(false)
 
   const nav = useNavigate()
@@ -18,9 +18,9 @@ export default function Register() {
     e.preventDefault()
     setLoading(true)
 
-    // 🔒 Validation: club must enter club name
-    if (role === 'club' && club_Name.trim() === '') {
-      alert('Please enter club name')
+    // 🔒 Validation
+    if (role === "club" && clubName.trim() === "") {
+      alert("Please enter club name")
       setLoading(false)
       return
     }
@@ -28,15 +28,15 @@ export default function Register() {
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, pass)
 
-      await setDoc(doc(db, 'users', cred.user.uid), {
+      await setDoc(doc(db, "users", cred.user.uid), {
         email,
         role,
-        club_name: role === 'club' ? club_Name : null,
+        clubName: role === "club" ? clubName : null,
         createdAt: new Date(),
       })
 
-      alert('Registration successful!')
-      nav('/')
+      alert("Registration successful!")
+      nav("/")
     } catch (err) {
       alert(err.message)
     } finally {
@@ -66,27 +66,24 @@ export default function Register() {
           onChange={(e) => setPass(e.target.value)}
         />
 
-        <select
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-        >
+        <select value={role} onChange={(e) => setRole(e.target.value)}>
           <option value="student">Student</option>
           <option value="club">Club Lead</option>
           <option value="teacher">Teacher</option>
         </select>
 
-        {/* 👇 CLUB NAME FIELD (ONLY FOR CLUBS) */}
-        {role === 'club' && (
+        {/* 👇 CLUB NAME FIELD */}
+        {role === "club" && (
           <input
             required
             placeholder="Club Name"
-            value={club_Name}
-            onChange={(e) => setClub_Name(e.target.value)}
+            value={clubName}
+            onChange={(e) => setClubName(e.target.value)}
           />
         )}
 
         <button type="submit" className="btn-primary" disabled={loading}>
-          {loading ? 'Creating account...' : 'Create account'}
+          {loading ? "Creating account..." : "Create account"}
         </button>
       </form>
     </div>
