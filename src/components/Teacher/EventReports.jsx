@@ -1,22 +1,39 @@
 import React, { useEffect, useState } from "react"
 import { db } from "../../firebase"
-import { collection, getDocs } from "firebase/firestore"
+import { collection, getDocs, orderBy, query } from "firebase/firestore"
 
 export default function EventReports() {
   const [reports, setReports] = useState([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     loadReports()
   }, [])
 
   async function loadReports() {
-    const snap = await getDocs(collection(db, "reports"))
-    setReports(
-      snap.docs.map(d => ({
-        id: d.id,
-        ...d.data(),
-      }))
-    )
+    try {
+      const q = query(
+        collection(db, "reports"),
+        orderBy("createdAt", "desc")
+      )
+
+      const snap = await getDocs(q)
+
+      setReports(
+        snap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+      )
+    } catch (err) {
+      console.error("Failed to load reports:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return <p className="text-gray-400 italic">Loading reports…</p>
   }
 
   return (
@@ -29,13 +46,14 @@ export default function EventReports() {
             key={r.id}
             className="p-4 bg-gray-700 rounded-lg flex justify-between items-center"
           >
+            {/* LEFT INFO */}
             <div>
               <div className="font-semibold text-white">
                 {r.eventName || "Untitled Event"}
               </div>
 
               <div className="text-sm text-gray-300">
-                Club: {r.clubName}
+                Club: {r.clubName || "Unknown"}
               </div>
 
               <div className="text-xs text-gray-400">
@@ -46,14 +64,21 @@ export default function EventReports() {
               </div>
             </div>
 
-            <a
-  href={r.pdfUrl}
-  target="_blank"
-  rel="noreferrer"
-  className="px-3 py-1 bg-blue-500 text-black rounded"
->
-  View PDF
-</a>
+            {/* RIGHT ACTION */}
+            {r.pdfUrl ? (
+              <a
+                href={r.pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-black rounded font-medium"
+              >
+                View PDF
+              </a>
+            ) : (
+              <span className="text-xs text-red-400 italic">
+                PDF missing
+              </span>
+            )}
           </div>
         ))
       )}
