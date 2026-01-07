@@ -7,16 +7,8 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function userDoc() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid));
-    }
-
-    function userExists() {
-      return isAuth() && userDoc().exists();
-    }
-
     function userRole() {
-      return userExists() ? userDoc().data.role : null;
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
 
     function isTeacher() {
@@ -33,36 +25,23 @@ service cloud.firestore {
 
     /* ================= USERS ================= */
     match /users/{userId} {
+      // 🔑 REQUIRED so rules can read roles
       allow read: if isAuth();
-      allow create: if isAuth() && request.auth.uid == userId;
+
+      // Users can update ONLY their own profile
       allow update: if isAuth() && request.auth.uid == userId;
+
+      // Users create their profile on signup
+      allow create: if isAuth() && request.auth.uid == userId;
+
       allow delete: if false;
     }
 
     /* ================= BOOKINGS ================= */
     match /bookings/{bookingId} {
-
       allow read: if true;
-
-      // Clubs can create bookings with required fields
-      allow create: if isClub()
-        && request.resource.data.keys().hasAll([
-          "title",
-          "room",
-          "date",
-          "start",
-          "end",
-          "status",
-          "clubId",
-          "clubName",
-          "createdAt"
-        ])
-        && request.resource.data.clubId == request.auth.uid
-        && request.resource.data.clubName is string;
-
-      // Teachers approve / reject
+      allow create: if isClub();
       allow update: if isTeacher();
-
       allow delete: if false;
     }
 
